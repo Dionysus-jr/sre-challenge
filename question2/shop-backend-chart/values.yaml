@@ -1,0 +1,47 @@
+replicaCount: 3
+
+image:
+  repository: strm/helloworld-http
+  tag: latest
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: false
+  annotations: {}
+  name: ""
+
+service:
+  type: ClusterIP
+  port: 80
+
+livenessProbe:
+  tcpSocket:
+    port: 80
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 1
+  successThreshold: 1
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: 80
+  initialDelaySeconds: 10
+  periodSeconds: 1
+  timeoutSeconds: 1
+  successThreshold: 1
+  failureThreshold: 2
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+cronjob:
+  schedule: "*/30 * * * *"
+  image:
+    repository: busybox
+    tag: latest
+    pullPolicy: IfNotPresent
