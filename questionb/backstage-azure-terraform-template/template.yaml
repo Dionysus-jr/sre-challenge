@@ -1,0 +1,134 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-template
+kind: Template
+metadata:
+  name: azure-terraform-infra
+  title: Azure Infrastructure with Terraform
+  description: Provision Azure resources (Resource Group, Storage Account, Container) using Terraform
+spec:
+  owner: user:guest
+  type: service
+
+  # These parameters are used to generate the input form in the frontend, and are
+  # used to gather input data for the execution of the template.
+  parameters:
+    - title: Azure Configuration
+      required:
+        - region
+      properties:
+        region:
+          title: Azure Region
+          type: string
+          description: The Azure region where resources will be deployed
+          default: "West Europe"
+          enum: ["West Europe", "North Europe", "East US", "West US", "Southeast Asia"]
+          ui:options:
+            allowArbitraryValues: true
+    - title: Resource Group
+      required:
+        - resource_group_name
+      properties:
+        resource_group_name:
+          title: Resource Group Name
+          type: string
+          pattern: "^[a-zA-Z0-9-_]{3,90}$"
+          description: The name must be alphanumeric and 3–90 characters
+          ui:autofocus: true
+        resource_group_tags:
+          title: Resource Group Tags
+          type: string
+          description: Comma-separated key:value pairs (e.g., "env:prod,team:sre")
+          default: "department:SRE"
+    - title: Storage Account
+      required:
+        - storage_account_name
+      properties:
+        storage_account_name:
+          title: Storage Account Name
+          type: string
+          pattern: "^[a-z0-9]{3,24}$"
+          description: Must be lowercase, alphanumeric, 3-24 characters
+        storage_account_resource_group:
+          title: Resource Group Name
+          type: string
+          description: Resource group for the storage account
+          default: "sre-challenge-flaschenpost"
+        sku:
+          title: SKU
+          type: string
+          description: The SKU of the storage account
+          default: "Standard_LRS"
+          enum: ["Standard_LRS", "Premium_LRS", "Standard_GRS", "Standard_RAGRS"]
+        access_tier:
+          title: Access Tier
+          type: string
+          description: The access tier for the storage account
+          default: "Hot"
+          enum: ["Hot", "Cool"]
+        storage_account_tags:
+          title: Storage Account Tags
+          type: string
+          description: Comma-separated key:value pairs
+          default: "department:SRE"
+
+    - title: Storage Container
+      required:
+        - container_name
+      properties:
+        container_name:
+          title: Container Name
+          type: string
+          description: The name of the storage container
+          default: "sre"
+        container_access_type:
+          title: Access Type
+          type: string
+          description: The container access type
+          default: "private"
+          enum: ["private", "blob", "container"]
+      
+
+  # These steps are executed in the scaffolder backend, using data that we gathered
+  # via the parameters above.
+  steps:
+    # Each step executes an action, in this case one templates files into the working directory.
+    - id: generate-files
+      name: Generate Terraform Files
+      action: fetch:template
+      input:
+        url: ./template
+        values:
+          region: ${{ parameters.region }}
+          resource_group_name: ${{ parameters.resource_group_name }}
+          resource_group_tags: ${{ parameters.resource_group_tags }}
+          storage_account_name: ${{ parameters.storage_account_name }}
+          storage_account_resource_group: ${{ parameters.storage_account_resource_group }}
+          sku: ${{ parameters.sku }}
+          access_tier: ${{ parameters.access_tier }}
+          storage_account_tags: ${{ parameters.storage_account_tags }}
+          container_name: ${{ parameters.container_name }}
+          container_access_type: ${{ parameters.container_access_type }}
+
+    # This step publishes the contents of the working directory to GitHub.
+    # If you or your organization prefer another default branch name over 'main'
+    # you can change that here.
+    - id: publish
+      name: Publish
+      action: publish:github
+      input:
+        allowedHosts: ['github.com']
+        description: This is ${{ parameters.name }}
+        repoUrl: github.com?owner=Dionysus-jr&repo=playingw-backstage
+        defaultBranch: 'main'
+
+    - id: dry-run-notice
+      name: Terraform Dry Run
+      action: debug:log
+      input:
+        message: |
+          Terraform configuration generated successfully!
+          Next steps:
+          1. cd into the new repository
+          2. Run 'terraform init'
+          3. Run 'terraform plan'
+          4. Run 'terraform apply' (if plan looks good)
