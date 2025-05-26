@@ -5,6 +5,6 @@ metadata:
   description: Azure infrastructure provisioned via Terraform
 
 spec:
-  type: service
+  type: infrastructure
   owner: user:guest
   lifecycle: experimental
